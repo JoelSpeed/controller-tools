@@ -152,7 +152,6 @@ type ExampleStruct struct {
 	ExampleField string `json:"string"`
 }
 
-// +genclient
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:singular=mycronjob
 
