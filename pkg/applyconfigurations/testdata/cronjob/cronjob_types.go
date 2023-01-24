@@ -18,13 +18,9 @@ limitations under the License.
 package testdata
 
 import (
-	"encoding/json"
-	"fmt"
-
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -156,6 +152,7 @@ type ExampleStruct struct {
 	ExampleField string `json:"string"`
 }
 
+// +genclient
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:singular=mycronjob
 
