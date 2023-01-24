@@ -16,3 +16,6 @@
 *.swp
 *.swo
 *~
+
+# Compiled binaries
+_output/
