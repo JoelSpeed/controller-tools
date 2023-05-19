@@ -21,7 +21,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"sort"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -42,15 +41,6 @@ func (m outputToMap) Open(_ *loader.Package, path string) (io.WriteCloser, error
 		m[path] = &outputFile{}
 	}
 	return m[path], nil
-}
-
-func (m outputToMap) fileList() []string {
-	ret := make([]string, 0, len(m))
-	for path := range m {
-		ret = append(ret, path)
-	}
-	sort.Strings(ret)
-	return ret
 }
 
 type outputFile struct {

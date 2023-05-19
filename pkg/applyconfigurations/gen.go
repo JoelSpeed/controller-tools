@@ -55,8 +55,6 @@ const importPathSuffix = "applyconfiguration"
 type Generator struct {
 	// HeaderFile specifies the header text (e.g. license) to prepend to generated files.
 	HeaderFile string `marker:",optional"`
-
-	outputPath string
 }
 
 func (Generator) CheckFilter() loader.NodeFilter {
@@ -166,7 +164,7 @@ func (u *Universe) existingApplyConfigPath(_ *types.Named, pkgPath string) (stri
 	return "", false
 }
 
-func (u *Universe) IsApplyConfigGenerated(typeInfo *types.Named, pkgPath string) bool {
+func (u *Universe) IsApplyConfigGenerated(typeInfo *types.Named) bool {
 	if t, ok := u.typeMetadata[typeInfo]; ok {
 		return t.used
 	}
@@ -174,7 +172,7 @@ func (u *Universe) IsApplyConfigGenerated(typeInfo *types.Named, pkgPath string)
 }
 
 func (u *Universe) GetApplyConfigPath(typeInfo *types.Named, pkgPath string) (string, bool) {
-	isApplyConfigGenerated := u.IsApplyConfigGenerated(typeInfo, pkgPath)
+	isApplyConfigGenerated := u.IsApplyConfigGenerated(typeInfo)
 	if path, ok := u.existingApplyConfigPath(typeInfo, pkgPath); ok {
 		if isApplyConfigGenerated {
 			return path, true
@@ -251,7 +249,7 @@ func (ctx *ObjectGenCtx) generateForPackage(root *loader.Package) error {
 
 	packages := applygenerator.Packages(c, genericArgs)
 	if err := c.ExecutePackages(genericArgs.OutputBase, packages); err != nil {
-		return err
+		return fmt.Errorf("error executing packages: %w", err)
 	}
 
 	return nil
