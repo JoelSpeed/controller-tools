@@ -121,21 +121,29 @@ func Test_Schema_ApplyMarkers(t *testing.T) {
 	var invocations []string
 
 	applyMarkers(ctx, markers.MarkerValues{
-		"blah": []any{
+		"a": []any{
 			&testPriorityMarker{
 				priority: 0, callback: func() {
 					invocations = append(invocations, "0")
 				},
 			},
+		},
+		"b": []any{
 			&testPriorityMarker{priority: 2, callback: func() {
 				invocations = append(invocations, "2")
 			}},
+		},
+		"c": []any{
 			&testPriorityMarker{priority: 11, callback: func() {
 				invocations = append(invocations, "11")
 			}},
+		},
+		"d": []any{
 			&defaultPriorityMarker{callback: func() {
 				invocations = append(invocations, "default")
 			}},
+		},
+		"e": []any{
 			&testapplyFirstMarker{callback: func() {
 				invocations = append(invocations, "applyFirst")
 			}},

@@ -145,33 +145,32 @@ type schemaMarkerWithName struct {
 	Name         string
 }
 
+type schemaMarkerGroup struct {
+	Markers []any
+	Name    string
+}
+
 // applyMarkers applies schema markers given their priority to the given schema
 func applyMarkers(ctx *schemaContext, markerSet markers.MarkerValues, props *apiextensionsv1.JSONSchemaProps, node ast.Node) {
 	markers := make([]schemaMarkerWithName, 0, len(markerSet))
 	itemsMarkers := make([]schemaMarkerWithName, 0, len(markerSet))
 
-	for markerName, markerValues := range markerSet {
-		for _, markerValue := range markerValues {
-			if schemaMarker, isSchemaMarker := markerValue.(SchemaMarker); isSchemaMarker {
-				if strings.HasPrefix(markerName, crdmarkers.ValidationItemsPrefix) {
-					itemsMarkers = append(itemsMarkers, schemaMarkerWithName{
-						SchemaMarker: schemaMarker,
-						Name:         markerName,
-					})
-				} else {
-					markers = append(markers, schemaMarkerWithName{
-						SchemaMarker: schemaMarker,
-						Name:         markerName,
-					})
-				}
-			}
-		}
+	// Turn the markers into a list so that we can sort each marker group by priotity.
+	// Priority is set based on the type of the marker, not based on the marker value itself.
+	// This allows us to maintain the ordering of markers within each type of marker as they
+	// were in the godoc. This may be important, for example if multiple XValidations are meant to be ordered.
+	markersByMarkerType := []schemaMarkerGroup{}
+	for markerName, markerValue := range markerSet {
+		markersByMarkerType = append(markersByMarkerType, schemaMarkerGroup{
+			Markers: markerValue,
+			Name:    markerName,
+		})
 	}
 
-	cmpPriority := func(i, j schemaMarkerWithName) int {
+	cmpPriority := func(i, j schemaMarkerGroup) int {
 		var iPriority, jPriority crdmarkers.ApplyPriority
 
-		switch m := i.SchemaMarker.(type) {
+		switch m := i.Markers[0].(type) {
 		case crdmarkers.ApplyPriorityMarker:
 			iPriority = m.ApplyPriority()
 		case applyFirstMarker:
@@ -180,7 +179,7 @@ func applyMarkers(ctx *schemaContext, markerSet markers.MarkerValues, props *api
 			iPriority = crdmarkers.ApplyPriorityDefault
 		}
 
-		switch m := j.SchemaMarker.(type) {
+		switch m := j.Markers[0].(type) {
 		case crdmarkers.ApplyPriorityMarker:
 			jPriority = m.ApplyPriority()
 		case applyFirstMarker:
@@ -191,8 +190,25 @@ func applyMarkers(ctx *schemaContext, markerSet markers.MarkerValues, props *api
 
 		return int(iPriority - jPriority)
 	}
-	slices.SortStableFunc(markers, func(i, j schemaMarkerWithName) int { return cmpPriority(i, j) })
-	slices.SortStableFunc(itemsMarkers, func(i, j schemaMarkerWithName) int { return cmpPriority(i, j) })
+	slices.SortStableFunc(markersByMarkerType, cmpPriority)
+
+	for _, markerGroup := range markersByMarkerType {
+		for _, markerValue := range markerGroup.Markers {
+			if schemaMarker, isSchemaMarker := markerValue.(SchemaMarker); isSchemaMarker {
+				if strings.HasPrefix(markerGroup.Name, crdmarkers.ValidationItemsPrefix) {
+					itemsMarkers = append(itemsMarkers, schemaMarkerWithName{
+						SchemaMarker: schemaMarker,
+						Name:         markerGroup.Name,
+					})
+				} else {
+					markers = append(markers, schemaMarkerWithName{
+						SchemaMarker: schemaMarker,
+						Name:         markerGroup.Name,
+					})
+				}
+			}
+		}
+	}
 
 	for _, schemaMarker := range markers {
 		if err := schemaMarker.SchemaMarker.ApplyToSchema(props); err != nil {
